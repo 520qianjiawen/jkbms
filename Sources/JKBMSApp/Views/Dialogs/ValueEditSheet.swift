@@ -10,10 +10,14 @@ public struct ValueEditSheet: View {
 
     public init(field: SettingsView.EditingField) {
         self.field = field
-        self._value = State(initialValue: field.currentValue)
+        self._value = State(initialValue: field.currentValue.isFinite ? min(max(field.currentValue, field.range.lowerBound), field.range.upperBound) : field.range.lowerBound)
     }
 
-    private var isValid: Bool { value.isFinite && field.range.contains(value) }
+    private var isValid: Bool {
+        guard value.isFinite, field.range.contains(value), field.step > 0 else { return false }
+        let ticks = value / field.step
+        return abs(ticks - ticks.rounded()) < 0.00001 && field.validate(value)
+    }
 
     public var body: some View {
         NavigationView {
@@ -29,6 +33,7 @@ public struct ValueEditSheet: View {
                         Text(field.unit).foregroundColor(.secondary)
                     }
                     Stepper("每次调整 \(formatted(field.step))", value: $value, in: field.range, step: field.step)
+                    if let hint = field.hint { Text(hint).font(.caption).foregroundColor(.secondary) }
                     Text("允许范围 \(formatted(field.range.lowerBound)) ～ \(formatted(field.range.upperBound))")
                         .font(.caption).foregroundColor(.secondary)
                 }
@@ -49,6 +54,6 @@ public struct ValueEditSheet: View {
     }
 
     private func formatted(_ number: Double) -> String {
-        String(format: field.unit == "V" ? "%.3f %@" : "%.1f %@", number, field.unit)
+        String(format: field.step >= 1 ? "%.0f %@" : (field.step >= 0.1 ? "%.1f %@" : (field.step >= 0.01 ? "%.2f %@" : "%.3f %@")), number, field.unit)
     }
 }

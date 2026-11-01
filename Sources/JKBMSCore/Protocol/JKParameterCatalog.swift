@@ -30,7 +30,21 @@ public enum JKParameterCatalog {
         let definition: JKParameterDefinition
         let wireFields: [String: WireField]
     }
-    public static var definitions: [JKParameterDefinition] { entries.map(\.definition) }
+    public static var definitions: [JKParameterDefinition] {
+        entries.map(\.definition) + JKAlarmThresholds.channels.flatMap { channel in
+            [channel.triggerID, channel.releaseID].map { id in
+                JKParameterDefinition(id: id, title: channel.title + (id == channel.triggerID ? "触发值" : "恢复值"),
+                    group: "通信与报警选择", unit: "", step: 1,
+                    range: Double(Int32.min)...Double(Int32.max), isSwitch: false)
+            }
+        }
+    }
+    public static func definitions(settings: JKBMSSettings) -> [JKParameterDefinition] {
+        definitions.compactMap { definition in
+            JKAlarmThresholds.isThreshold(definition.id)
+                ? JKAlarmThresholds.definition(id: definition.id, settings: settings) : definition
+        }
+    }
 
     private static func common(_ register: UInt8, _ offset: Int, factor: Double = 1,
                                encoding: Encoding = .u32) -> [String: WireField] {
@@ -188,14 +202,18 @@ public enum JKParameterCatalog {
     ]
 
     public static func supports(id: String, variant: JKProtocolVariant) -> Bool {
-        entries.contains { $0.definition.id == id && $0.wireFields[variant.rawValue] != nil }
+        if JKAlarmThresholds.isThreshold(id) { return variant == .jk02_32s }
+        return entries.contains { $0.definition.id == id && $0.wireFields[variant.rawValue] != nil }
     }
     /// These fields are read from 0x03 rather than the settings frame (0x01).
     public static func readbackNeedsDeviceInfo(id: String) -> Bool {
-        entries.first(where: { $0.definition.id == id })?.wireFields[JKProtocolVariant.jk02_32s.rawValue]?.frameType == 3
+        JKAlarmThresholds.isThreshold(id) || entries.first(where: { $0.definition.id == id })?.wireFields[JKProtocolVariant.jk02_32s.rawValue]?.frameType == 3
     }
 
-    public static func encode(id: String, value: Double, variant: JKProtocolVariant) throws -> Data {
+    public static func encode(id: String, value: Double, variant: JKProtocolVariant, settings: JKBMSSettings? = nil) throws -> Data {
+        if JKAlarmThresholds.isThreshold(id) {
+            return try JKAlarmThresholds.encode(id: id, value: value, variant: variant, settings: settings)
+        }
         guard let entry = entries.first(where: { $0.definition.id == id }),
               let field = entry.wireFields[variant.rawValue] else { throw JKProtocolError.unsupported }
         guard value.isFinite, entry.definition.range.contains(value),
@@ -221,7 +239,7 @@ public enum JKParameterCatalog {
     public static func decode(frame: Data, variant: JKProtocolVariant) -> [String: Double] {
         guard JKModernCodec.isValid(frame: frame) else { return [:] }
         let bytes = [UInt8](frame.prefix(300))
-        var values: [String: Double] = [:]
+        var values = JKAlarmThresholds.decode(frame: frame, variant: variant)
         for entry in entries {
             guard let field = entry.wireFields[variant.rawValue], bytes[4] == field.frameType else { continue }
             let value: Double
@@ -262,6 +280,7 @@ public enum JKParameterCatalog {
     }
 
     public static func isValueAvailable(id: String, value: Double, settings: JKBMSSettings) -> Bool {
+        if JKAlarmThresholds.isThreshold(id) { return JKAlarmThresholds.isValueAvailable(id: id, value: value, settings: settings) }
         guard let definition = definitions.first(where: { $0.id == id }), value.isFinite else { return false }
         guard definition.options != nil else { return definition.range.contains(value) }
         return value == value.rounded() && availableOptions(id: id, settings: settings)[Int(value)] != nil

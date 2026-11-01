@@ -103,6 +103,8 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
     private var awaitingWriteResponse = false
     private var writes: [JKCommand] = []
     private var pendingWrite: JKCommand?
+    private var pendingAlarmSource: Int?
+    private var alarmImportSources: [String: Int] = [:]
     private var pendingDeadline: Date?
     private var lastRequest = Date.distantPast
     private var cancellables = Set<AnyCancellable>()
@@ -243,7 +245,7 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         transportTimer?.invalidate(); transportTimer = nil
         transportQueue = []; awaitingWriteResponse = false
         if pendingWrite != nil || !writes.isEmpty { commandMessage = "连接已结束，未确认的操作已取消" }
-        writes = []; pendingWrite = nil; pendingDeadline = nil
+        writes = []; pendingWrite = nil; pendingDeadline = nil; alarmImportSources = [:]
         writeCharacteristic = nil; notifyCharacteristic = nil
         assembler.reset(); deviceInfo = nil; settingsFrame = nil; deviceInfoFrame = nil; undecodedFrames = []
         originalSchemaName = ""; originalRealtime = []; originalSettings = []; originalDeviceInfo = []
@@ -308,8 +310,30 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         }
     }
 
+    public func alarmFieldVisible(_ id: String) -> Bool {
+        guard let channel = JKAlarmThresholds.channel(for: id) else { return false }
+        if isSimulatorMode { return settings.extendedValues[id] != nil }
+        guard originalSchemaName == "JK-BXAXS-XP", originalRawInfo[id] != nil,
+              let flags = originalRawInfo["enableFlags"] else { return false }
+        let index = id == channel.id ? 21 + JKAlarmThresholds.channels.firstIndex(where: { $0.id == channel.id })! : channel.visibleIndex + (id == channel.releaseID ? 1 : 0)
+        return JKOriginalSchema.bitEnabled(flags.bytes, index: index)
+    }
+
+    public func setAlarmThreshold(id: String, value: Double, expectedSource: Int, expectedDevice: UUID?) {
+        guard connectedDevice?.id == expectedDevice,
+              JKAlarmThresholds.source(for: id, settings: settings) == expectedSource else {
+            fail("设备或报警触发源已变化，请重新打开阈值输入框"); return
+        }
+        send(command: .setParameter(id: id, value: value))
+    }
+
     public func supports(command supplied: JKCommand) -> Bool {
         let command = normalizeCommand(supplied)
+        if case .setParameter(let id, _) = command, let channel = JKAlarmThresholds.channel(for: id) {
+            guard alarmFieldVisible(id) else { return false }
+            let register = JKAlarmThresholds.register(id: id) ?? UInt8(0xA9 + JKAlarmThresholds.channels.firstIndex(where: { $0.id == channel.id })!)
+            return isSimulatorMode || (detectedProtocol == .jk02_32s && originalCommandSupported(register))
+        }
         if case .setOriginalSwitch(_, let key, let bit, _) = command { return originalSwitchAvailable(key: key, bit: bit) }
         if case .setOriginalParameter(_, let key, _) = command { return originalCanEdit(key) }
         return isSimulatorMode || JKModernCodec.supports(command: command, variant: detectedProtocol)
@@ -317,6 +341,12 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
 
     public func send(command supplied: JKCommand) {
         let command = normalizeCommand(supplied)
+        if case .setParameter(let id, let value) = command, JKAlarmThresholds.channel(for: id) != nil {
+            guard JKParameterCatalog.isValueAvailable(id: id, value: value, settings: settings) else {
+                fail("报警参数无效，请核对当前触发源、整数范围及触发值与恢复值的关系"); return
+            }
+            guard pendingWrite == nil, writes.isEmpty else { fail("请等待当前参数回读完成后再修改报警设置"); return }
+        }
         if isSimulatorMode {
             simulator.execute(command: command)
             status = simulator.currentStatus; settings = simulator.currentSettings
@@ -339,7 +369,7 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
            !JKParameterCatalog.isValueAvailable(id: id, value: value, settings: settings) {
             fail("参数不在此设备公布的可选范围内"); return
         }
-        do { _ = try JKModernCodec.encode(command: command, variant: detectedProtocol) }
+        do { _ = try JKModernCodec.encode(command: command, variant: detectedProtocol, settings: settings) }
         catch { fail(error.localizedDescription); return }
         guard writes.count < 128 else { fail("待写入操作过多，请等候回读完成"); return }
         writes.append(command)
@@ -373,7 +403,7 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         for command in commands {
             guard supports(command: command) else { fail("当前协议不支持该预设的全部参数"); return }
             if !isSimulatorMode {
-                do { _ = try JKModernCodec.encode(command: command, variant: detectedProtocol) }
+                do { _ = try JKModernCodec.encode(command: command, variant: detectedProtocol, settings: settings) }
                 catch { fail(error.localizedDescription); return }
             }
         }
@@ -435,7 +465,13 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         }
         values = values.filter { key, value in
             guard value.isFinite, let command = configurationCommand(key: key, value: value) else { return false }
+            if JKAlarmThresholds.isThreshold(key) {
+                return supports(command: command) && JKAlarmThresholds.rule(id: key, settings: settings)?.contains(value) == true
+            }
             return supports(command: command)
+        }
+        for channel in JKAlarmThresholds.channels where values[channel.triggerID] != nil || values[channel.releaseID] != nil {
+            values[channel.id] = settings.extendedValues[channel.id]
         }
         let document = JKSettingsDocument(schemaVersion: 1, protocol: detectedProtocol.rawValue,
             deviceModel: status.deviceModel, cellCount: settings.cellCount,
@@ -462,11 +498,18 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         guard isSimulatorMode || document.protocol == detectedProtocol.rawValue else {
             fail("配置来自不同通信协议，未写入，请先核对目标设备"); return
         }
+        let alarmUpdates: [(String, Double)]
+        do { alarmUpdates = try JKAlarmThresholds.importUpdates(document.settings, settings: settings) }
+        catch { fail("报警备份的触发源、数值范围或恢复关系不匹配；请先单独切换触发源并回读，再导入对应阈值"); return }
         var commands: [JKCommand] = []
         for (key, value) in document.settings.sorted(by: { $0.key < $1.key }) {
+            // An unchanged selector supplies the units for a backup even on a board
+            // that allows threshold writes but not selector writes.
+            if JKAlarmThresholds.channel(for: key)?.id == key, value == settings.extendedValues[key] { continue }
             guard value.isFinite, let supplied = configurationCommand(key: key, value: value), supports(command: supplied) else {
                 fail("配置包含当前设备不支持的参数：\(key)"); return
             }
+            if JKAlarmThresholds.isThreshold(key) { continue }
             let command = normalizeCommand(supplied)
             if case .setOriginalParameter(_, "cellCount", let value) = command, value > Double(maximumCellCount) {
                 fail("备份串数超过当前型号上限，未写入"); return
@@ -475,12 +518,18 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
                !JKParameterCatalog.isValueAvailable(id: id, value: value, settings: settings) {
                 fail("参数 \(key) 不在目标设备公布的可选范围内"); return
             }
-            do { _ = try JKModernCodec.encode(command: command, variant: isSimulatorMode ? .jk02_32s : detectedProtocol) }
+            do { _ = try JKModernCodec.encode(command: command, variant: isSimulatorMode ? .jk02_32s : detectedProtocol, settings: settings) }
             catch { fail("参数 \(key)：\(error.localizedDescription)"); return }
             if !JKModernCodec.matches(command: command, status: status, settings: settings) { commands.append(command) }
         }
+        commands += alarmUpdates.map { .setParameter(id: $0.0, value: $0.1) }
         guard !commands.isEmpty else { commandMessage = "配置与设备回读值一致，无需写入"; return }
         if isSimulatorMode { commands.forEach { send(command: $0) }; return }
+        alarmImportSources = Dictionary(uniqueKeysWithValues: JKAlarmThresholds.channels.compactMap { channel in
+            guard alarmUpdates.contains(where: { $0.0 == channel.triggerID || $0.0 == channel.releaseID }),
+                  let source = JKAlarmThresholds.source(for: channel.id, settings: settings) else { return nil }
+            return (channel.id, source)
+        })
         writes = commands
         commandMessage = "开始导入 \(commands.count) 项参数，逐项回读验证"
         processNextWrite()
@@ -538,8 +587,20 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         guard pendingWrite == nil, !writes.isEmpty, canWrite else { return }
         let command = writes.removeFirst()
         do {
-            let packet = try JKModernCodec.encode(command: command, variant: detectedProtocol)
+            if case .setParameter(let id, let value) = command {
+                if JKAlarmThresholds.isThreshold(id), let channel = JKAlarmThresholds.channel(for: id),
+                   let expected = alarmImportSources[channel.id], JKAlarmThresholds.source(for: id, settings: settings) != expected {
+                    abortWrites("报警触发源已变化，备份中的阈值未继续写入"); return
+                }
+                guard supports(command: command), JKParameterCatalog.isValueAvailable(id: id, value: value, settings: settings) else {
+                    abortWrites("设备报警来源或可写范围已变化，后续写入已停止"); return
+                }
+            }
+            let packet = try JKModernCodec.encode(command: command, variant: detectedProtocol, settings: settings)
             pendingWrite = command
+            if case .setParameter(let id, _) = command, JKAlarmThresholds.channel(for: id) != nil {
+                pendingAlarmSource = JKAlarmThresholds.source(for: id, settings: settings)
+            } else { pendingAlarmSource = nil }
             pendingDeadline = Date().addingTimeInterval(8)
             commandMessage = "指令发送中 · 等待设备回读确认"
             enqueue(packet)
@@ -559,10 +620,19 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         } catch { abortWrites(error.localizedDescription) }
     }
 
-    private func verifyPendingWrite() {
+    private func verifyPendingWrite(frameType: UInt8? = nil) {
         guard let command = pendingWrite else { return }
+        if case .setParameter(let id, let value) = command, JKAlarmThresholds.channel(for: id) != nil {
+            guard frameType == 3 else { return }
+            let expectedSource = JKAlarmThresholds.isThreshold(id) ? pendingAlarmSource : Int(exactly: value)
+            guard JKAlarmThresholds.source(for: id, settings: settings) == expectedSource else {
+                if JKAlarmThresholds.isThreshold(id) { abortWrites("报警触发源已改变，未确认本次阈值写入") }
+                return
+            }
+        }
         if JKModernCodec.matches(command: command, status: status, settings: settings) {
             pendingWrite = nil; pendingDeadline = nil
+            if writes.isEmpty { alarmImportSources = [:] }
             commandMessage = writes.isEmpty ? "已由保护板回读确认" : "本项回读一致，继续写入其余 \(writes.count) 项"
             let token = sessionID
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
@@ -572,7 +642,7 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
     }
 
     private func abortWrites(_ reason: String) {
-        pendingWrite = nil; pendingDeadline = nil; writes = []
+        pendingWrite = nil; pendingDeadline = nil; writes = []; alarmImportSources = [:]
         // Do not replay a possibly already applied mutation on reconnect.
         transportQueue = []
         commandMessage = "操作未确认：\(reason)"
@@ -746,7 +816,7 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
             hasSettings = true
         }
         settings.extendedValues.merge(JKParameterCatalog.decode(frame: frame, variant: detectedProtocol), uniquingKeysWith: { _, new in new })
-        verifyPendingWrite()
+        verifyPendingWrite(frameType: frame[4])
     }
 
     private func applyInfo(_ info: JKDeviceInfo) {

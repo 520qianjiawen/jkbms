@@ -25,10 +25,12 @@ public struct SettingsView: View {
         public let unit: String
         public let step: Double
         public let range: ClosedRange<Double>
+        public let hint: String?
+        public let validate: (Double) -> Bool
         public let onSave: (Double) -> Void
-        public init(id: String, title: String, currentValue: Double, unit: String, step: Double, range: ClosedRange<Double> = 0...100000, onSave: @escaping (Double) -> Void) {
+        public init(id: String, title: String, currentValue: Double, unit: String, step: Double, range: ClosedRange<Double> = 0...100000, hint: String? = nil, validate: @escaping (Double) -> Bool = { _ in true }, onSave: @escaping (Double) -> Void) {
             self.id = id; self.title = title; self.currentValue = currentValue
-            self.unit = unit; self.step = step; self.range = range; self.onSave = onSave
+            self.unit = unit; self.step = step; self.range = range; self.hint = hint; self.validate = validate; self.onSave = onSave
         }
     }
 
@@ -161,7 +163,10 @@ public struct SettingsView: View {
     }
 
     private var advancedDefinitions: [JKParameterDefinition] {
-        JKParameterCatalog.definitions.filter { !$0.isSwitch && bt.settings.extendedValues[$0.id]?.isFinite == true }
+        JKParameterCatalog.definitions(settings: bt.settings).filter {
+            !$0.isSwitch && bt.settings.extendedValues[$0.id]?.isFinite == true &&
+            (JKAlarmThresholds.channel(for: $0.id) == nil || bt.alarmFieldVisible($0.id))
+        }
     }
 
     @ViewBuilder private var advancedParameters: some View {
@@ -172,6 +177,8 @@ public struct SettingsView: View {
                         ForEach(advancedDefinitions.filter { $0.group == group }) { definition in
                             if definition.options != nil {
                                 choiceParameter(definition)
+                            } else if JKAlarmThresholds.isThreshold(definition.id) {
+                                alarmParameter(definition)
                             } else {
                                 parameter(definition.title, value: bt.settings.extendedValues[definition.id] ?? .nan, unit: definition.unit, step: definition.step, range: definition.range) {
                                     .setParameter(id: definition.id, value: $0)
@@ -188,6 +195,9 @@ public struct SettingsView: View {
         let value = bt.settings.extendedValues[definition.id] ?? .nan
         let current = Int(exactly: value.rounded()) ?? -1
         let options = JKParameterCatalog.availableOptions(id: definition.id, settings: bt.settings)
+        let supported = JKAlarmThresholds.channel(for: definition.id) != nil
+            ? bt.supports(command: .setParameter(id: definition.id, value: value))
+            : JKParameterCatalog.supports(id: definition.id, variant: bt.detectedProtocol)
         return VStack(alignment: .leading, spacing: 4) {
             Picker(definition.title, selection: Binding(get: { current }, set: { selected in
                 bt.send(command: .setParameter(id: definition.id, value: Double(selected)))
@@ -199,11 +209,53 @@ public struct SettingsView: View {
                     Text(options[key] ?? "\(key)").tag(key)
                 }
             }
-            .disabled(!bt.canWrite || options.isEmpty || !JKParameterCatalog.supports(id: definition.id, variant: bt.detectedProtocol))
+            .disabled(!bt.canWrite || options.isEmpty || !supported)
             if options.isEmpty {
                 Text("设备未提供可写选项列表").font(.caption).foregroundColor(.secondary)
             }
+            if let channel = JKAlarmThresholds.channel(for: definition.id), channel.id == definition.id {
+                if let rule = JKAlarmThresholds.rule(source: current) {
+                    Text("阈值单位：\(rule.unit)，范围：\(Int(rule.range.lowerBound)) ～ \(Int(rule.range.upperBound))；\(rule.relationship)")
+                        .font(.caption).foregroundColor(.secondary)
+                    if !bt.alarmFieldVisible(channel.triggerID) || !bt.alarmFieldVisible(channel.releaseID) {
+                        Text("此设备未开放完整的触发值/恢复值设置").font(.caption).foregroundColor(.secondary)
+                    }
+                } else {
+                    Text([0, 10, 12, 14].contains(current) ? "此触发源无需数值阈值" : "此触发源的阈值规则尚未确认，暂不开放数值修改")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
         }.padding(.vertical, 6)
+    }
+
+    private func alarmParameter(_ definition: JKParameterDefinition) -> some View {
+        let value = bt.settings.extendedValues[definition.id] ?? .nan
+        let rule = JKAlarmThresholds.rule(id: definition.id, settings: bt.settings)
+        return Button {
+            guard let source = JKAlarmThresholds.source(for: definition.id, settings: bt.settings), let rule else { return }
+            let snapshot = bt.settings
+            let deviceID = bt.connectedDevice?.id
+            editingField = EditingField(id: definition.id, title: definition.title, currentValue: value,
+                unit: definition.unit, step: definition.step, range: definition.range, hint: rule.relationship,
+                validate: { JKAlarmThresholds.isValueAvailable(id: definition.id, value: $0, settings: snapshot) }) {
+                    bt.setAlarmThreshold(id: definition.id, value: $0, expectedSource: source, expectedDevice: deviceID)
+                }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(definition.title).foregroundColor(.primary)
+                    if rule?.contains(value) == false { Text("当前值超出此触发源范围，请修改").font(.caption).foregroundColor(.orange) }
+                    else if !bt.supports(command: .setParameter(id: definition.id, value: value)) {
+                        Text("设备未开放写入").font(.caption).foregroundColor(.secondary)
+                    }
+                }
+                Spacer()
+                Text(JKDisplayValue.number(value, format: "%.0f") + " " + definition.unit)
+                    .font(.subheadline.monospaced()).foregroundColor(JKTheme.primaryBlue)
+                Image(systemName: bt.canWrite ? "pencil" : "lock").font(.caption).foregroundColor(.secondary)
+            }.padding(.vertical, 8)
+        }.buttonStyle(.plain)
+            .disabled(!bt.canWrite || !bt.supports(command: .setParameter(id: definition.id, value: value)))
     }
 
     private func parameter(_ title: String, value: Double, unit: String, step: Double, range: ClosedRange<Double>, command: @escaping (Double) -> JKCommand) -> some View {

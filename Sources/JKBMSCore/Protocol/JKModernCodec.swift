@@ -60,16 +60,19 @@ public enum JKModernCodec {
     }
 
     public static func supports(command: JKCommand, variant: JKProtocolVariant) -> Bool {
-        (try? encode(command: command, variant: variant)) != nil
+        if case .setParameter(let id, _) = command, JKAlarmThresholds.isThreshold(id) {
+            return JKParameterCatalog.supports(id: id, variant: variant)
+        }
+        return (try? encode(command: command, variant: variant)) != nil
     }
 
-    public static func encode(command cmd: JKCommand, variant: JKProtocolVariant) throws -> Data {
+    public static func encode(command cmd: JKCommand, variant: JKProtocolVariant, settings: JKBMSSettings? = nil) throws -> Data {
         switch cmd {
         case .setOriginalSwitch(let family, let key, let bit, let enabled):
             return try JKOriginalSchema.encodeSwitch(key: key, bit: bit, enabled: enabled, family: family)
         case .setOriginalParameter(let family, let key, let value):
             return try JKOriginalSchema.encode(key: key, value: value, family: family)
-        case .setParameter(let id, let value): return try JKParameterCatalog.encode(id: id, value: value, variant: variant)
+        case .setParameter(let id, let value): return try JKParameterCatalog.encode(id: id, value: value, variant: variant, settings: settings)
         case .requestTelemetry, .requestSettings:
             return variant == .legacy ? JKPacketCodec.encode(command: .requestTelemetry) : command(register: 0x96)
         case .requestDeviceInfo:
