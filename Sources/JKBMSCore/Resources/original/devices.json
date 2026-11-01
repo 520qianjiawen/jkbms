@@ -1,0 +1,723 @@
+{
+  "JK-B1A24S": [
+    {
+      "name": "JK-B1A24S",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "PXZK-01",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "PXZK-02",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "HW-B2A",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "JK-B1A16S",
+      "count": 16
+    },
+    {
+      "name": "JK-B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-B2A16S",
+      "count": 16
+    },
+    {
+      "name": "JK-B2A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-B5A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-B10A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ10-B2A18S",
+      "count": 18
+    },
+    {
+      "name": "JK-B5A24SDD",
+      "count": 24
+    },
+    {
+      "name": "JK-B5A24SDZ",
+      "count": 24
+    }
+  ],
+  "JK-B1A24S-P": [
+    {
+      "name": "JK-B1A24S-P",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "SQ-BD6A20S6P",
+      "count": 20,
+      "beta": true
+    },
+    {
+      "name": "SQ-BD6A20S10P",
+      "count": 20,
+      "beta": true
+    },
+    {
+      "name": "SQ-BD6A24S10P",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "SQ-B1A20S15P",
+      "count": 20,
+      "beta": true
+    },
+    {
+      "name": "SQ-B1A24S15P",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "JK-BD6A20S-10P",
+      "count": 20
+    },
+    {
+      "name": "JK-BD6A20S10P",
+      "count": 20
+    },
+    {
+      "name": "JK-BD6A17S10P",
+      "count": 17
+    },
+    {
+      "name": "JK-B1A24S-15P",
+      "count": 24
+    },
+    {
+      "name": "JK-B1A24S15P",
+      "count": 24
+    },
+    {
+      "name": "JK-B2A24S-15P",
+      "count": 24
+    },
+    {
+      "name": "JK-B2A24S15P",
+      "count": 24
+    },
+    {
+      "name": "JK-B2A24S-20P",
+      "count": 24
+    },
+    {
+      "name": "JK-B2A24S20P",
+      "count": 24
+    },
+    {
+      "name": "JK-B5A16S-60P",
+      "count": 16
+    },
+    {
+      "name": "JK-B5A16S60P",
+      "count": 16
+    },
+    {
+      "name": "JK-B2A24S60P",
+      "count": 24
+    },
+    {
+      "name": "JK-B5A24S60P",
+      "count": 24
+    },
+    {
+      "name": "JK-BD4A17S4P",
+      "count": 17
+    },
+    {
+      "name": "JK-BD6A17S6P",
+      "count": 17
+    },
+    {
+      "name": "JK-BD6A20S6P",
+      "count": 20
+    },
+    {
+      "name": "JK-BD6A20S15P",
+      "count": 20
+    },
+    {
+      "name": "JK-BD6A22S15P",
+      "count": 22
+    },
+    {
+      "name": "JK-BD6A24S6P",
+      "count": 24
+    },
+    {
+      "name": "JK-BD6A24S10P",
+      "count": 24
+    },
+    {
+      "name": "JK-BD6A20S3P",
+      "count": 20
+    },
+    {
+      "name": "JK-B1A20S15P",
+      "count": 20
+    },
+    {
+      "name": "JK-BD6A17S8P",
+      "count": 17
+    },
+    {
+      "name": "JK-BD6A20S8P",
+      "count": 20
+    },
+    {
+      "name": "JK-BD6A24S8P",
+      "count": 24
+    },
+    {
+      "name": "JK-B1A8S20P",
+      "count": 8
+    },
+    {
+      "name": "JK-B2A8S20P",
+      "count": 8
+    },
+    {
+      "name": "JK-B2A20S20P",
+      "count": 20
+    },
+    {
+      "name": "JK-B2A24S25P",
+      "count": 24
+    }
+  ],
+  "JK-B1A32S-P": [
+    {
+      "name": "JK-B2A25S60P",
+      "count": 25
+    },
+    {
+      "name": "JK-B5A25S60P",
+      "count": 25
+    }
+  ],
+  "JK-DZ08-B1A24S": [
+    {
+      "name": "JK-DZ08-B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ08-B2A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ11-B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ11-B2A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ08B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ08B2A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ11B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK-DZ11B2A24S",
+      "count": 24
+    }
+  ],
+  "JK-B1A24S-PLW": [
+    {
+      "name": "JK-B1A24S-PLW",
+      "count": 24,
+      "beta": true
+    },
+    {
+      "name": "JK-BD6A20S15P",
+      "count": 20
+    },
+    {
+      "name": "JK-BD6A22S15P",
+      "count": 22
+    },
+    {
+      "name": "JK-BD6A24S12P",
+      "count": 24
+    }
+  ],
+  "JK-B1A24S-PSR": [
+    {
+      "name": "JK-BD6A13SSR",
+      "count": 13
+    }
+  ],
+  "JK-BXAXS-XP": [
+    {
+      "name": "JK-BXAXS-XP",
+      "count": 32
+    },
+    {
+      "name": "JK_B1A8S20P",
+      "count": 8
+    },
+    {
+      "name": "JK_B1A20S15P",
+      "count": 20
+    },
+    {
+      "name": "JK_B1A24S15P",
+      "count": 24
+    },
+    {
+      "name": "JK_B2A8S20P",
+      "count": 8
+    },
+    {
+      "name": "JK_B2A20S20P",
+      "count": 20
+    },
+    {
+      "name": "JK_B2A24S15P",
+      "count": 24
+    },
+    {
+      "name": "JK_B2A24S20P",
+      "count": 24
+    },
+    {
+      "name": "JK_B2A25SRP",
+      "count": 25
+    },
+    {
+      "name": "JK_BD4A17S4P",
+      "count": 17
+    },
+    {
+      "name": "JK_BD6A17S6P",
+      "count": 17
+    },
+    {
+      "name": "JK_BD6A17S8P",
+      "count": 17
+    },
+    {
+      "name": "JK_BD6A20S6P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A20S8P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A20S10P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A24S6P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A24S8P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A24S10P",
+      "count": 24
+    },
+    {
+      "name": "JK_DZ13B2A4S",
+      "count": 4
+    },
+    {
+      "name": "JK_BD6A24S15P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A20S15P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD4A20S4P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD4A24S4P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD4A8S4P",
+      "count": 8
+    },
+    {
+      "name": "JK_B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_B2A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_B1A16S",
+      "count": 16
+    },
+    {
+      "name": "JK_B2A16S",
+      "count": 16
+    },
+    {
+      "name": "JK_B3A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_DZ08B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_DZ08B2A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_DZ11B1A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_DZ11B2A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_B5A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_B10A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_B1A17S12P",
+      "count": 17
+    },
+    {
+      "name": "JK_BD6A24S12P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A20S12P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A17S12P",
+      "count": 17
+    },
+    {
+      "name": "JK_B1A8S10P",
+      "count": 8
+    },
+    {
+      "name": "JK_B1A16S15P",
+      "count": 16
+    },
+    {
+      "name": "JK_B1A4S20P",
+      "count": 4
+    },
+    {
+      "name": "JK_B2A4S",
+      "count": 4
+    },
+    {
+      "name": "JK_B10A26S",
+      "count": 26
+    },
+    {
+      "name": "JK_BD6A8SP",
+      "count": 8
+    },
+    {
+      "name": "JK-B1A8S15P",
+      "count": 15
+    },
+    {
+      "name": "JK_PB1A16S10P",
+      "count": 16
+    },
+    {
+      "name": "JK_PB1A16S15P",
+      "count": 16
+    },
+    {
+      "name": "JK_PB1A16S20P",
+      "count": 16
+    },
+    {
+      "name": "JK_PB2A16S15P",
+      "count": 16
+    },
+    {
+      "name": "JK_PB2A16S20P",
+      "count": 16
+    },
+    {
+      "name": "JK_DZ15",
+      "count": 17
+    },
+    {
+      "name": "JK_DZ18_8P",
+      "count": 20
+    },
+    {
+      "name": "JK_DZ18_10P",
+      "count": 20
+    },
+    {
+      "name": "JK_DZ18_12P",
+      "count": 20
+    },
+    {
+      "name": "JK_DZ18_15P",
+      "count": 20
+    },
+    {
+      "name": "JK_DZ19",
+      "count": 17
+    },
+    {
+      "name": "JK_B2A8S30P",
+      "count": 8
+    },
+    {
+      "name": "JK_B2A8S",
+      "count": 8
+    },
+    {
+      "name": "JK_XY7260R",
+      "count": 20
+    },
+    {
+      "name": "JK_B1A8S15P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A8S6P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A8S8P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A8S10P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A8S6P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A8S8P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A8S10P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A17S6P",
+      "count": 17
+    },
+    {
+      "name": "JK_BD4A17S8P",
+      "count": 17
+    },
+    {
+      "name": "JK_BD4A20S6P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD4A20S8P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD4A20S10P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD4A24S6P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD4A24S8P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD4A24S10P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD4A20S5PG",
+      "count": 20
+    },
+    {
+      "name": "JK_BD4A20S6PG",
+      "count": 20
+    },
+    {
+      "name": "JK_B15A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_B4A24S",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A20S20P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A24S20P",
+      "count": 24
+    },
+    {
+      "name": "JK_DBSX-23S",
+      "count": 24
+    },
+    {
+      "name": "JK_QB2A8S20P",
+      "count": 8
+    },
+    {
+      "name": "JK_B2A24S30P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A8S10P",
+      "count": 8
+    },
+    {
+      "name": "JK_BD4A24S12P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD4A20S12P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD4A8S8P",
+      "count": 8
+    },
+    {
+      "name": "JK_PB2A16S30P",
+      "count": 16
+    },
+    {
+      "name": "JK_BD6A24S4P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A20S4P",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A17S4P",
+      "count": 17
+    },
+    {
+      "name": "JK_BD6A24S4PD",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A20S4PD",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A17S4PD",
+      "count": 17
+    },
+    {
+      "name": "JK_B2A32S30P",
+      "count": 32
+    },
+    {
+      "name": "JK_B2A32SRP",
+      "count": 32
+    },
+    {
+      "name": "JK_PB2A16S10P",
+      "count": 16
+    },
+    {
+      "name": "JK_F24S4P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A24S6PD",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A20S6PD",
+      "count": 20
+    },
+    {
+      "name": "JK_BD6A17S6PD",
+      "count": 17
+    },
+    {
+      "name": "JK_F24S6P",
+      "count": 24
+    },
+    {
+      "name": "JK_F24S8P",
+      "count": 24
+    },
+    {
+      "name": "JK_F24S10P",
+      "count": 24
+    },
+    {
+      "name": "JK_F24S12P",
+      "count": 24
+    },
+    {
+      "name": "JK_BD6A43S20P",
+      "count": 32
+    },
+    {
+      "name": "JK_BD6A32S12P",
+      "count": 32
+    },
+    {
+      "name": "JK_BD6A32S15P",
+      "count": 32
+    },
+    {
+      "name": "JK_B2A25SCRP",
+      "count": 25
+    },
+    {
+      "name": "JK_B2A32SCRP",
+      "count": 32
+    }
+  ]
+}
