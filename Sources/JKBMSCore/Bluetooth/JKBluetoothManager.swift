@@ -310,6 +310,13 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         }
     }
 
+    public var dataStoredPeriodVisible: Bool {
+        if isSimulatorMode { return settings.extendedValues["dataStoredPeriod"] != nil }
+        guard originalSchemaName == "JK-BXAXS-XP", originalRawInfo["dataStoredPeriod"] != nil,
+              let flags = originalRawInfo["enableFlags"] else { return false }
+        return JKOriginalSchema.bitEnabled(flags.bytes, index: 31)
+    }
+
     public var uart4ProtocolVisible: Bool {
         if isSimulatorMode { return settings.extendedValues["uart4Protocol"] != nil }
         guard originalSchemaName == "JK-BXAXS-XP", originalRawInfo["uart4ProtoNo"] != nil,
@@ -336,6 +343,9 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
 
     public func supports(command supplied: JKCommand) -> Bool {
         let command = normalizeCommand(supplied)
+        if case .setParameter("dataStoredPeriod", _) = command {
+            return dataStoredPeriodVisible && (isSimulatorMode || (detectedProtocol == .jk02_32s && originalCommandSupported(0xB2)))
+        }
         if case .setParameter("uart4Protocol", _) = command {
             return uart4ProtocolVisible && (isSimulatorMode || (detectedProtocol == .jk02_32s && originalCommandSupported(0xB8)))
         }
@@ -356,6 +366,11 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
                 fail("报警参数无效，请核对当前触发源、整数范围及触发值与恢复值的关系"); return
             }
             guard pendingWrite == nil, writes.isEmpty else { fail("请等待当前参数回读完成后再修改报警设置"); return }
+        }
+        if case .setParameter("dataStoredPeriod", let value) = command {
+            guard value.isFinite, (5...864000).contains(value), value == value.rounded() else {
+                fail("历史数据存储周期必须为5至864000之间的整数秒"); return
+            }
         }
         if case .setParameter("uart4Protocol", let value) = command,
            !JKParameterCatalog.isValueAvailable(id: "uart4Protocol", value: value, settings: settings) {
@@ -479,6 +494,9 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         }
         values = values.filter { key, value in
             guard value.isFinite, let command = configurationCommand(key: key, value: value) else { return false }
+            if key == "dataStoredPeriod" {
+                return supports(command: command) && (5...864000).contains(value) && value == value.rounded()
+            }
             if JKAlarmThresholds.isThreshold(key) {
                 return supports(command: command) && JKAlarmThresholds.rule(id: key, settings: settings)?.contains(value) == true
             }
@@ -636,7 +654,8 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
 
     private func verifyPendingWrite(frameType: UInt8? = nil) {
         guard let command = pendingWrite else { return }
-        if case .setParameter("uart4Protocol", _) = command, frameType != 3 { return }
+        if case .setParameter(let id, _) = command,
+           ["uart4Protocol", "dataStoredPeriod"].contains(id), frameType != 3 { return }
         if case .setParameter(let id, let value) = command, JKAlarmThresholds.channel(for: id) != nil {
             guard frameType == 3 else { return }
             let expectedSource = JKAlarmThresholds.isThreshold(id) ? pendingAlarmSource : Int(exactly: value)

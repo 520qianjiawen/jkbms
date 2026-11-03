@@ -160,6 +160,7 @@ public enum JKParameterCatalog {
         number("requestedFloatVoltage", "推荐浮充电压 RFV", "电压与均衡", "V", 0.001, 0.003...4.35, common(0x0A, 42, factor: 1000)),
         number("powerOffVoltage", "自动关机电压", "电压与均衡", "V", 0.01, 1.2...4.35, powerOffFields),
         number("balancingStartVoltage", "均衡起始电压", "电压与均衡", "V", 0.01, 1.2...4.25, balanceStartFields),
+        number("dataStoredPeriod", "历史数据存储周期", "历史记录", "s", 1, 5...864000, modern(0xB2, 262, frameType: 3)),
         number("requestedChargeHours", "RCV 保持时间", "浮充与休眠", "h", 0.1, 0...18.2, modern(0xB3, 266, factor: 10, length: 1, encoding: .u8, frameType: 3)),
         number("requestedFloatHours", "RFV 保持时间", "浮充与休眠", "h", 0.1, 0...18.2, modern(0xB4, 267, factor: 10, length: 1, encoding: .u8, frameType: 3)),
         number("reBulkSOC", "退出浮充 SOC 差", "浮充与休眠", "%", 1, 0...50, modern(0xB7, 278, length: 1, encoding: .u8, frameType: 3)),
@@ -259,7 +260,7 @@ public enum JKParameterCatalog {
                 default: value = Double(raw) / field.factor
                 }
             }
-            if value.isFinite, (entry.definition.range.contains(value) || entry.definition.id == "uart4Protocol"), field.allowedRange?.contains(value) ?? true {
+            if value.isFinite, (entry.definition.range.contains(value) || ["uart4Protocol", "dataStoredPeriod"].contains(entry.definition.id)), field.allowedRange?.contains(value) ?? true {
                 values[entry.definition.id] = value
                 if let maskOffset = field.capabilityMaskOffset {
                     let mask = (0..<4).reduce(UInt32(0)) { $0 | UInt32(bytes[maskOffset + $1]) << (8 * $1) }

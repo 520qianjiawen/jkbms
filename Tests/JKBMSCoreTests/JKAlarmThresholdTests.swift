@@ -14,7 +14,7 @@ final class JKAlarmThresholdTests: XCTestCase {
             (1, "%", 0, 99, true), (2, "mV", 0, 105000, false), (3, "mV", 0, 105000, true),
             (4, "mV", 0, 5000, false), (5, "mV", 0, 5000, true),
             (6, "mA", 0, 1000000, false), (7, "mA", 0, 1000000, false),
-            (8, "℃", -50, 150, false), (9, "℃", -50, 150, false), (11, "℃", -50, 150, true)
+            (8, "℃", -50, 150, false), (9, "℃", -50, 150, false), (11, "℃", -50, 150, true), (13, "%", 0, 99, false)
         ]
         for (source, unit, minimum, maximum, below) in cases {
             let rule = try XCTUnwrap(JKAlarmThresholds.rule(source: source))
@@ -35,7 +35,7 @@ final class JKAlarmThresholdTests: XCTestCase {
             XCTAssertEqual(definition.unit, unit); XCTAssertEqual(definition.range.upperBound, upper)
             XCTAssertEqual(definition.step, 1)
         }
-        for source in [0, 10, 12, 13, 14, 99] {
+        for source in [0, 10, 12, 14, 99] {
             snapshot.extendedValues["lcdBuzzerTrigger"] = Double(source)
             XCTAssertFalse(JKParameterCatalog.definitions(settings: snapshot).contains { $0.id == "lcdBuzzerTriggerVal" })
             XCTAssertThrowsError(try JKModernCodec.encode(command: .setParameter(id: "lcdBuzzerTriggerVal", value: 10), variant: .jk02_32s, settings: snapshot))
@@ -174,6 +174,38 @@ final class JKAlarmThresholdTests: XCTestCase {
         XCTAssertNil(manager.lastErrorMessage)
         XCTAssertEqual(manager.settings.extendedValues["lcdBuzzerTriggerVal"], 50)
         XCTAssertEqual(manager.settings.extendedValues["lcdBuzzerReleaseVal"], 60)
+    }
+
+    func testHighSOCUsesPercentIntegersAndExistingSignedThresholdRegisters() throws {
+        for channel in JKAlarmThresholds.channels {
+            let snapshot = settings(channel, source: 13, trigger: 90, release: 80)
+            let definition = try XCTUnwrap(JKAlarmThresholds.definition(id: channel.triggerID, settings: snapshot))
+            XCTAssertEqual(definition.unit, "%")
+            XCTAssertEqual(definition.range, 0...99)
+            XCTAssertTrue(JKAlarmThresholds.isValueAvailable(id: channel.triggerID, value: 99, settings: snapshot))
+            for value in [-1, 0, 80, 90.5, 100] {
+                XCTAssertFalse(JKAlarmThresholds.isValueAvailable(id: channel.triggerID, value: value, settings: snapshot))
+            }
+            XCTAssertFalse(JKAlarmThresholds.isValueAvailable(id: channel.releaseID, value: 90, settings: snapshot))
+            let packet = try JKModernCodec.encode(command: .setParameter(id: channel.triggerID, value: 90), variant: .jk02_32s, settings: snapshot)
+            XCTAssertEqual(packet[4], channel.triggerRegister)
+            XCTAssertEqual(Array(packet[6...9]), [90, 0, 0, 0])
+            XCTAssertTrue(JKParameterCatalog.matches(id: channel.triggerID, value: 90, settings: snapshot))
+        }
+    }
+
+    func testHighSOCImportMaintainsHysteresisAndRejectsOldSourceContext() throws {
+        let snapshot = settings(source: 13, trigger: 90, release: 80)
+        let updates = try JKAlarmThresholds.importUpdates([
+            "lcdBuzzerTrigger": 13, "lcdBuzzerTriggerVal": 70, "lcdBuzzerReleaseVal": 60
+        ], settings: snapshot)
+        XCTAssertEqual(updates.map { $0.0 }, ["lcdBuzzerReleaseVal", "lcdBuzzerTriggerVal"])
+        XCTAssertThrowsError(try JKAlarmThresholds.importUpdates([
+            "lcdBuzzerTrigger": 13, "lcdBuzzerTriggerVal": 70, "lcdBuzzerReleaseVal": 80
+        ], settings: snapshot))
+        XCTAssertThrowsError(try JKAlarmThresholds.importUpdates([
+            "lcdBuzzerTrigger": 1, "lcdBuzzerTriggerVal": 70, "lcdBuzzerReleaseVal": 60
+        ], settings: snapshot))
     }
 
 }

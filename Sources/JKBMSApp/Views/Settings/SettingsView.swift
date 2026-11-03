@@ -166,6 +166,7 @@ public struct SettingsView: View {
         JKParameterCatalog.definitions(settings: bt.settings).filter {
             !$0.isSwitch && bt.settings.extendedValues[$0.id]?.isFinite == true &&
             ($0.id != "uart4Protocol" || bt.uart4ProtocolVisible) &&
+            ($0.id != "dataStoredPeriod" || bt.dataStoredPeriodVisible) &&
             (JKAlarmThresholds.channel(for: $0.id) == nil || bt.alarmFieldVisible($0.id))
         }
     }
@@ -180,6 +181,15 @@ public struct SettingsView: View {
                                 choiceParameter(definition)
                             } else if JKAlarmThresholds.isThreshold(definition.id) {
                                 alarmParameter(definition)
+                            } else if definition.id == "dataStoredPeriod" {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    parameter(definition.title, value: bt.settings.extendedValues[definition.id] ?? .nan,
+                                        unit: definition.unit, step: definition.step, range: definition.range) {
+                                            .setParameter(id: definition.id, value: $0)
+                                        }
+                                    Text("单位为秒，范围5～864000秒（最长10天）；用于设备定时历史记录，定时存储开关需单独设置。")
+                                        .font(.caption).foregroundColor(.secondary)
+                                }
                             } else {
                                 parameter(definition.title, value: bt.settings.extendedValues[definition.id] ?? .nan, unit: definition.unit, step: definition.step, range: definition.range) {
                                     .setParameter(id: definition.id, value: $0)
@@ -220,6 +230,10 @@ public struct SettingsView: View {
                 if let rule = JKAlarmThresholds.rule(source: current) {
                     Text("阈值单位：\(rule.unit)，范围：\(Int(rule.range.lowerBound)) ～ \(Int(rule.range.upperBound))；\(rule.relationship)")
                         .font(.caption).foregroundColor(.secondary)
+                    if current == 13 {
+                        Text("App按0～99%的整数范围校验；具体固件的阈值行为需以设备实测为准。")
+                            .font(.caption).foregroundColor(.secondary)
+                    }
                     if !bt.alarmFieldVisible(channel.triggerID) || !bt.alarmFieldVisible(channel.releaseID) {
                         Text("此设备未开放完整的触发值/恢复值设置").font(.caption).foregroundColor(.secondary)
                     }

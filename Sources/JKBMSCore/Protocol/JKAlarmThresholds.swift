@@ -46,8 +46,10 @@ public enum JKAlarmThresholds {
         case 4, 5: return Rule(unit: "mV", range: 0...5000, triggersBelow: source == 5)
         case 6, 7: return Rule(unit: "mA", range: 0...1000000, triggersBelow: false)
         case 8, 9, 11: return Rule(unit: "℃", range: -50...150, triggersBelow: source == 11)
-        // Newer source 13 exists in the original selector list, but its threshold
-        // specification has not been established. Never reuse another source's limits.
+        // Original selector 13 is Above SoC. This conservative app policy uses
+        // the documented SOC integer domain (0...99), with high-trigger hysteresis.
+        // It is not a declaration of every firmware's accepted bounds or comparator.
+        case 13: return Rule(unit: "%", range: 0...99, triggersBelow: false)
         default: return nil
         }
     }
