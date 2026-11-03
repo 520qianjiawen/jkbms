@@ -50,11 +50,11 @@ def main():
     common = '''
         ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
         CODE_SIGN_STYLE = Automatic;
-        CURRENT_PROJECT_VERSION = 236;
+        CURRENT_PROJECT_VERSION = 237;
         GENERATE_INFOPLIST_FILE = YES;
         INFOPLIST_KEY_CFBundleDisplayName = "极空BMS原生版";
         INFOPLIST_KEY_CFBundleIdentifier = "com.cavon.jkbms.native";
-        INFOPLIST_KEY_CFBundleShortVersionString = "0.2.2";
+        INFOPLIST_KEY_CFBundleShortVersionString = "0.2.3";
         INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "极空BMS使用蓝牙连接您的电池管理系统，进行数据采集和参数配置";
         INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "极空BMS使用蓝牙连接您的电池管理系统，进行数据采集和参数配置";
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -62,7 +62,7 @@ def main():
         INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
         INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
         IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-        MARKETING_VERSION = 0.2.2;
+        MARKETING_VERSION = 0.2.3;
         PRODUCT_BUNDLE_IDENTIFIER = "com.cavon.jkbms.native";
         PRODUCT_NAME = JKBMS;
         SDKROOT = iphoneos;

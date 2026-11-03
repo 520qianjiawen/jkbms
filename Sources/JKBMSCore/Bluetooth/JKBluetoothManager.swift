@@ -310,6 +310,13 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
         }
     }
 
+    public var uart4ProtocolVisible: Bool {
+        if isSimulatorMode { return settings.extendedValues["uart4Protocol"] != nil }
+        guard originalSchemaName == "JK-BXAXS-XP", originalRawInfo["uart4ProtoNo"] != nil,
+              let flags = originalRawInfo["enableFlags"] else { return false }
+        return JKOriginalSchema.bitEnabled(flags.bytes, index: 38)
+    }
+
     public func alarmFieldVisible(_ id: String) -> Bool {
         guard let channel = JKAlarmThresholds.channel(for: id) else { return false }
         if isSimulatorMode { return settings.extendedValues[id] != nil }
@@ -329,6 +336,9 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
 
     public func supports(command supplied: JKCommand) -> Bool {
         let command = normalizeCommand(supplied)
+        if case .setParameter("uart4Protocol", _) = command {
+            return uart4ProtocolVisible && (isSimulatorMode || (detectedProtocol == .jk02_32s && originalCommandSupported(0xB8)))
+        }
         if case .setParameter(let id, _) = command, let channel = JKAlarmThresholds.channel(for: id) {
             guard alarmFieldVisible(id) else { return false }
             let register = JKAlarmThresholds.register(id: id) ?? UInt8(0xA9 + JKAlarmThresholds.channels.firstIndex(where: { $0.id == channel.id })!)
@@ -346,6 +356,10 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
                 fail("报警参数无效，请核对当前触发源、整数范围及触发值与恢复值的关系"); return
             }
             guard pendingWrite == nil, writes.isEmpty else { fail("请等待当前参数回读完成后再修改报警设置"); return }
+        }
+        if case .setParameter("uart4Protocol", let value) = command,
+           !JKParameterCatalog.isValueAvailable(id: "uart4Protocol", value: value, settings: settings) {
+            fail("此设备未开放所选的 UART4 协议"); return
         }
         if isSimulatorMode {
             simulator.execute(command: command)
@@ -622,6 +636,7 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
 
     private func verifyPendingWrite(frameType: UInt8? = nil) {
         guard let command = pendingWrite else { return }
+        if case .setParameter("uart4Protocol", _) = command, frameType != 3 { return }
         if case .setParameter(let id, let value) = command, JKAlarmThresholds.channel(for: id) != nil {
             guard frameType == 3 else { return }
             let expectedSource = JKAlarmThresholds.isThreshold(id) ? pendingAlarmSource : Int(exactly: value)

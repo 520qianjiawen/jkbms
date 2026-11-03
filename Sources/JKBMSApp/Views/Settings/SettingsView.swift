@@ -165,6 +165,7 @@ public struct SettingsView: View {
     private var advancedDefinitions: [JKParameterDefinition] {
         JKParameterCatalog.definitions(settings: bt.settings).filter {
             !$0.isSwitch && bt.settings.extendedValues[$0.id]?.isFinite == true &&
+            ($0.id != "uart4Protocol" || bt.uart4ProtocolVisible) &&
             (JKAlarmThresholds.channel(for: $0.id) == nil || bt.alarmFieldVisible($0.id))
         }
     }
@@ -195,7 +196,7 @@ public struct SettingsView: View {
         let value = bt.settings.extendedValues[definition.id] ?? .nan
         let current = Int(exactly: value.rounded()) ?? -1
         let options = JKParameterCatalog.availableOptions(id: definition.id, settings: bt.settings)
-        let supported = JKAlarmThresholds.channel(for: definition.id) != nil
+        let supported = definition.id == "uart4Protocol" || JKAlarmThresholds.channel(for: definition.id) != nil
             ? bt.supports(command: .setParameter(id: definition.id, value: value))
             : JKParameterCatalog.supports(id: definition.id, variant: bt.detectedProtocol)
         return VStack(alignment: .leading, spacing: 4) {
@@ -212,6 +213,8 @@ public struct SettingsView: View {
             .disabled(!bt.canWrite || options.isEmpty || !supported)
             if options.isEmpty {
                 Text("设备未提供可写选项列表").font(.caption).foregroundColor(.secondary)
+            } else if definition.id == "uart4Protocol", !supported {
+                Text("设备未开放 UART4 协议写入").font(.caption).foregroundColor(.secondary)
             }
             if let channel = JKAlarmThresholds.channel(for: definition.id), channel.id == definition.id {
                 if let rule = JKAlarmThresholds.rule(source: current) {

@@ -194,6 +194,7 @@ public enum JKParameterCatalog {
         choice("uart1Protocol", "UART1 协议", 0xA5, 184, options: uartOptions, maskOffset: 186),
         choice("uart2Protocol", "UART2 协议", 0xA8, 218, options: uartOptions, maskOffset: 219),
         choice("uart3Protocol", "UART3 协议", 0xB6, 270, options: uartOptions, maskOffset: 271),
+        choice("uart4Protocol", "UART4 协议", 0xB8, 279, options: uartOptions, maskOffset: 280),
         choice("canProtocol", "CAN 协议", 0xA6, 185, options: canOptions, maskOffset: 202),
         choice("lcdBuzzerTrigger", "显示器报警触发源", 0xA9, 234, options: triggerOptions),
         choice("dry1Trigger", "干接点1触发源", 0xAA, 235, options: triggerOptions),
@@ -219,6 +220,9 @@ public enum JKParameterCatalog {
         guard value.isFinite, entry.definition.range.contains(value),
               field.allowedRange?.contains(value) ?? true,
               !entry.definition.isSwitch || value == 0 || value == 1 else { throw JKProtocolError.invalidValue }
+        if id == "uart4Protocol", let settings {
+            guard isValueAvailable(id: id, value: value, settings: settings) else { throw JKProtocolError.invalidValue }
+        }
         if let options = entry.definition.options {
             guard value == value.rounded(), options[Int(value)] != nil else { throw JKProtocolError.invalidValue }
         }
@@ -255,7 +259,7 @@ public enum JKParameterCatalog {
                 default: value = Double(raw) / field.factor
                 }
             }
-            if value.isFinite, entry.definition.range.contains(value), field.allowedRange?.contains(value) ?? true {
+            if value.isFinite, (entry.definition.range.contains(value) || entry.definition.id == "uart4Protocol"), field.allowedRange?.contains(value) ?? true {
                 values[entry.definition.id] = value
                 if let maskOffset = field.capabilityMaskOffset {
                     let mask = (0..<4).reduce(UInt32(0)) { $0 | UInt32(bytes[maskOffset + $1]) << (8 * $1) }
