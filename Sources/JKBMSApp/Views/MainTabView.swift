@@ -4,7 +4,7 @@ import JKBMSCore
 #endif
 
 public struct MainTabView: View {
-    @State private var selectedTab: Int = 3
+    @State private var selectedTab: Int = 0
     @ObservedObject private var bt = JKBluetoothManager.shared
 
     public init() {}
@@ -16,9 +16,9 @@ public struct MainTabView: View {
 
             // Main Tab View
             TabView(selection: $selectedTab) {
-                RealTimeView()
+                RealTimeView(onShowDevices: { selectedTab = 3 })
                     .tabItem {
-                        Label("实时状态", systemImage: "gauge.with.needle.fill")
+                        Label("首页", systemImage: "gauge.with.needle.fill")
                     }
                     .tag(0)
 

@@ -8,13 +8,9 @@ public struct DeviceListView: View {
     @ObservedObject private var bt = JKBluetoothManager.shared
     @State private var showingCatalog = false
     @State private var showingLog = false
-    @State private var connectionPassword = ""
-    @State private var rememberConnectionPassword = true
     @State private var showingManagement = false
     @State private var showingOriginalFields = false
     @State private var showingSystemLogs = false
-    @State private var deviceFilter = ""
-    @State private var sortBySignal = true
 
     public init() {}
 
@@ -59,23 +55,7 @@ public struct DeviceListView: View {
                             Text(device.id.uuidString).font(.caption2.monospaced()).foregroundColor(.secondary)
                         }
                     }
-                    if bt.requiresDevicePassword {
-                        PasswordEntryField(title: "保护板蓝牙连接密码", text: $connectionPassword, onSubmit: confirmConnectionPassword)
-                        Button("确认连接密码", action: confirmConnectionPassword)
-                            .buttonStyle(.borderedProminent)
-                            .disabled(connectionPassword.isEmpty)
-                        Toggle("记住此设备密码，下次自动验证", isOn: $rememberConnectionPassword)
-                            .font(.subheadline)
-                        Text("蓝牙连接密码与参数设置密码分别保存在本机钥匙串。").font(.caption).foregroundColor(.secondary)
-                    } else if bt.hasRememberedConnectionPassword || bt.hasRememberedSettingsPassword {
-                        Label("已记住此设备密码", systemImage: "checkmark.shield.fill")
-                            .font(.caption).foregroundColor(JKTheme.successGreen)
-                        Button("清除记住的密码") { bt.forgetRememberedPasswords() }
-                            .font(.caption)
-                    }
-                    if !bt.credentialMessage.isEmpty {
-                        Text(bt.credentialMessage).font(.caption).foregroundColor(.orange)
-                    }
+                    DeviceConnectionPasswordView()
                     Button("设备管理、密码与详细历史") { showingManagement = true }
                         .buttonStyle(.bordered).disabled(bt.originalSchemaName.isEmpty || bt.requiresDevicePassword)
                     Button("查看完整参数与设备数据") { showingOriginalFields = true }
@@ -98,27 +78,7 @@ public struct DeviceListView: View {
 
                 if !bt.isSimulatorMode {
                     card("附近保护板", icon: "wave.3.right") {
-                        HStack {
-                            Text(bt.isScanning ? "正在搜索附近设备…" : "显示 \(filteredDevices.count) 台设备")
-                                .font(.subheadline).foregroundColor(.secondary)
-                            Spacer()
-                            Button(bt.isScanning ? "停止搜索" : "扫描设备") {
-                                if bt.isScanning { bt.stopScan() } else { bt.startScan() }
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(bt.bluetoothState != .poweredOn || bt.isConnecting)
-                        }
-                        TextField("筛选名称或设备 UUID", text: $deviceFilter)
-                            .textFieldStyle(.roundedBorder)
-                        Toggle("按信号强度排序", isOn: $sortBySignal).font(.caption)
-                        ForEach(filteredDevices) { device in
-                            Divider()
-                            deviceRow(device)
-                        }
-                        if filteredDevices.isEmpty {
-                            Text("请确认保护板已通电，并断开官方 App 或其他手机的蓝牙连接，再点击“扫描设备”。")
-                                .font(.caption).foregroundColor(.secondary).padding(.vertical, 8)
-                        }
+                        NearbyBoardsView()
                     }
                 }
 
@@ -161,18 +121,6 @@ public struct DeviceListView: View {
         }
     }
 
-    private func confirmConnectionPassword() {
-        if bt.unlockDevice(password: connectionPassword, remember: rememberConnectionPassword) { connectionPassword = "" }
-    }
-
-    private var filteredDevices: [JKDevice] {
-        let query = deviceFilter.trimmingCharacters(in: .whitespacesAndNewlines)
-        let devices = bt.discoveredDevices.filter { device in
-            !device.isSimulator && (query.isEmpty || device.name.localizedCaseInsensitiveContains(query) || device.id.uuidString.localizedCaseInsensitiveContains(query))
-        }
-        return sortBySignal ? devices.sorted { $0.rssi > $1.rssi } : devices.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    }
-
     private var bluetoothDescription: String {
         switch bt.bluetoothState {
         case .poweredOn: return "已开启"
@@ -183,24 +131,6 @@ public struct DeviceListView: View {
         case .unknown: return "正在检查"
         @unknown default: return "未知状态"
         }
-    }
-
-    private func deviceRow(_ device: JKDevice) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "batteryblock.fill").foregroundColor(JKTheme.primaryBlue)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(device.name).font(.subheadline.bold())
-                Text("信号 \(device.rssi) dBm").font(.caption).foregroundColor(.secondary)
-            }
-            Spacer()
-            if bt.connectedDevice?.id == device.id && bt.isConnected {
-                Text("已连接").font(.caption.bold()).foregroundColor(JKTheme.successGreen)
-            } else {
-                Button("连接") { bt.connect(to: device) }
-                    .buttonStyle(.bordered)
-                    .disabled(bt.isConnecting || bt.isConnected)
-            }
-        }.padding(.vertical, 4)
     }
 
     private func card<Content: View>(_ title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
