@@ -150,8 +150,7 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
             connectionMessage = "演示模式 · 数据由本地模拟器生成"
             simulator.start()
         } else {
-            connectionMessage = "真实设备模式 · 请连接保护板"
-            if bluetoothState == .poweredOn { startScan() }
+            connectionMessage = "点击“搜索保护板”开始连接"
         }
         log(enabled ? "进入演示模式" : "退出演示模式")
     }
@@ -1154,12 +1153,20 @@ public final class JKBluetoothManager: NSObject, ObservableObject {
 
 extension JKBluetoothManager: CBCentralManagerDelegate {
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        bluetoothState = central.state
+        updateBluetoothState(central.state)
+    }
+
+    /// Becoming ready never initiates discovery; searching is an explicit UI action.
+    func updateBluetoothState(_ state: CBManagerState) {
+        bluetoothState = state
         guard !isSimulatorMode else { return }
-        if central.state == .poweredOn { if !isConnected && !isConnecting { startScan() } }
-        else {
+        if state == .poweredOn {
+            if !isConnected && !isConnecting && !isScanning {
+                connectionMessage = "蓝牙已就绪 · 点击“搜索保护板”开始"
+            }
+        } else {
             disconnect()
-            switch central.state {
+            switch state {
             case .unauthorized: connectionMessage = "蓝牙访问未授权，请前往系统设置允许"
             case .poweredOff: connectionMessage = "蓝牙已关闭，请开启手机蓝牙"
             case .unsupported: connectionMessage = "此设备不支持蓝牙低功耗通信"

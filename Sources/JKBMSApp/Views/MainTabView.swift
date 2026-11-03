@@ -12,7 +12,7 @@ public struct MainTabView: View {
     public var body: some View {
         VStack(spacing: 0) {
             // Header status bar
-            HeaderStatusView()
+            if selectedTab != 0 { HeaderStatusView() }
 
             // Main Tab View
             TabView(selection: $selectedTab) {

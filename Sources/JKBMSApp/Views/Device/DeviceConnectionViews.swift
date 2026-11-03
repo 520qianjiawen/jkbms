@@ -6,10 +6,15 @@ import JKBMSCore
 
 /// Both entry points share one Bluetooth session and the same connection actions.
 struct NearbyBoardsView: View {
-    @ObservedObject private var bt = JKBluetoothManager.shared
-    var showsFilters = true
+    @ObservedObject private var bt: JKBluetoothManager
+    var showsFilters: Bool
+    var showsSearchButton: Bool
     @State private var deviceFilter = ""
     @State private var sortBySignal = true
+
+    init(manager: JKBluetoothManager = .shared, showsFilters: Bool = true, showsSearchButton: Bool = true) {
+        bt = manager; self.showsFilters = showsFilters; self.showsSearchButton = showsSearchButton
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -18,11 +23,13 @@ struct NearbyBoardsView: View {
                 Text(bt.isScanning ? "正在搜索附近设备…" : "显示 \(filteredDevices.count) 台设备")
                     .font(.subheadline).foregroundColor(.secondary)
                 Spacer()
-                Button(bt.isScanning ? "停止搜索" : "搜索保护板") {
-                    if bt.isScanning { bt.stopScan() } else { bt.startScan() }
+                if showsSearchButton {
+                    Button(bt.isScanning ? "停止搜索" : "搜索保护板") {
+                        if bt.isScanning { bt.stopScan() } else { bt.startScan() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(bt.bluetoothState != .poweredOn || bt.isConnecting || bt.isConnected)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(bt.bluetoothState != .poweredOn || bt.isConnecting || bt.isConnected)
             }
             if showsFilters {
                 TextField("筛选名称或设备 UUID", text: $deviceFilter).textFieldStyle(.roundedBorder)
@@ -31,7 +38,10 @@ struct NearbyBoardsView: View {
             ForEach(filteredDevices) { device in
                 Divider()
                 HStack(spacing: 12) {
-                    Image(systemName: "batteryblock.fill").foregroundColor(JKTheme.primaryBlue)
+                    Image(systemName: "batteryblock.fill")
+                        .font(.system(size: 20)).foregroundColor(JKTheme.primaryBlue)
+                        .frame(width: 42, height: 42)
+                        .background(JKTheme.primaryBlue.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(device.name).font(.subheadline.bold())
                         Text("信号 \(device.rssi) dBm").font(.caption).foregroundColor(.secondary)
@@ -62,9 +72,11 @@ struct NearbyBoardsView: View {
 }
 
 struct DeviceConnectionPasswordView: View {
-    @ObservedObject private var bt = JKBluetoothManager.shared
+    @ObservedObject private var bt: JKBluetoothManager
     @State private var password = ""
     @State private var rememberPassword = true
+
+    init(manager: JKBluetoothManager = .shared) { bt = manager }
 
     var body: some View {
         Group {

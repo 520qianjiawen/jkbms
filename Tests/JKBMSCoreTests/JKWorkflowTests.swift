@@ -1,4 +1,5 @@
 import XCTest
+import CoreBluetooth
 @testable import JKBMSCore
 
 final class JKWorkflowTests: XCTestCase {
@@ -35,6 +36,25 @@ final class JKWorkflowTests: XCTestCase {
         XCTAssertTrue(manager.discoveredDevices.isEmpty)
         XCTAssertTrue(manager.status.cellVoltages.isEmpty)
         XCTAssertFalse(manager.canWrite)
+    }
+
+    func testBluetoothReadyAndReturningFromDemoNeverStartDiscovery() {
+        let manager = JKBluetoothManager(enableBluetooth: false)
+        manager.updateBluetoothState(.poweredOn)
+        XCTAssertEqual(manager.bluetoothState, .poweredOn)
+        XCTAssertFalse(manager.isScanning)
+        XCTAssertNil(manager.lastErrorMessage)
+        XCTAssertTrue(manager.connectionMessage.contains("点击"))
+        manager.updateBluetoothState(.poweredOff)
+        manager.updateBluetoothState(.poweredOn)
+        XCTAssertFalse(manager.isScanning)
+        XCTAssertNil(manager.lastErrorMessage)
+        manager.setDemoMode(true)
+        manager.setDemoMode(false)
+        XCTAssertFalse(manager.isScanning)
+        XCTAssertNil(manager.lastErrorMessage)
+        XCTAssertTrue(manager.discoveredDevices.isEmpty)
+        XCTAssertFalse(manager.diagnosticLog.contains("开始扫描"))
     }
 
     func testPasswordsNeverUnlockWithoutReadDeviceInformation() {
